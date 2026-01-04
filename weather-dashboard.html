@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الطقس | نظافة برو</title>
+    <meta name="description" content="متابعة أحوال الطقس الحالية والتوقعات لتخطيط عمليات التنظيف الخارجية بكفاءة">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --primary:#1a4d8f;
+            --primary-dark:#0f2e56;
+            --accent:#d4af37;
+            --bg:#f8f9fb;
+            --card:#ffffff;
+            --border:#e0e4e8;
+            --muted:#5a5a5a;
+            --shadow:0 8px 30px rgba(12,24,44,0.08);
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:"Cairo",sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;color:#111;direction:rtl;padding:2rem}
+        .container{max-width:1100px;margin:0 auto}
+        .weather-header{background:#fff;padding:1.5rem;border-radius:12px;box-shadow:var(--shadow);text-align:center}
+        .weather-header h1{color:var(--primary);font-weight:900}
+        .search-section{background:#fff;padding:1rem;border-radius:12px;margin-top:1rem;box-shadow:var(--shadow)}
+        .search-box{display:flex;gap:.75rem;max-width:720px;margin:0 auto}
+        .search-input{flex:1;padding:.9rem;border:2px solid var(--border);border-radius:8px;font-size:1rem}
+        .search-btn{padding:.9rem 1.2rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer}
+        .popular-cities{display:flex;gap:.5rem;justify-content:center;margin-top:.8rem;flex-wrap:wrap}
+        .city-tag{background:var(--card);padding:.45rem .9rem;border-radius:999px;border:1px solid var(--border);cursor:pointer}
+        .current-weather{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:2rem;border-radius:12px;margin-top:1rem;box-shadow:var(--shadow);text-align:center}
+        .city-name{font-weight:900;font-size:1.6rem}
+        .temperature-large{font-size:3rem;font-weight:900;margin-top:.5rem}
+        .weather-desc{opacity:.95}
+        .details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-top:1rem}
+        .detail{background:rgba(255,255,255,0.08);padding:1rem;border-radius:8px}
+        .forecast-section{background:#fff;padding:1rem;border-radius:12px;margin-top:1rem;box-shadow:var(--shadow)}
+        .forecast-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem}
+        .forecast-card{background:var(--bg);padding:1rem;border-radius:8px;text-align:center;border:1px solid var(--border)}
+        .loading{text-align:center;color:#fff;padding:2rem}
+        .error{background:#dc3545;color:#fff;padding:1rem;border-radius:8px;text-align:center;margin-top:1rem}
+        @media(max-width:700px){.search-box{flex-direction:column}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="weather-header">
+            <h1>🌤️ لوحة الطقس</h1>
+            <p class="muted">تابع أحوال الطقس لتخطيط عمليات التنظيف الخارجية بكفاءة</p>
+            <a href="index-ar.html" style="color:var(--primary);font-weight:800">← العودة إلى الكتالوج</a>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input id="cityInput" class="search-input" placeholder="ابحث عن مدينة (مثال: Riyadh, Jeddah, Dubai)" />
+                <button class="search-btn" onclick="searchCity()">🔍 بحث</button>
+            </div>
+            <div class="popular-cities" style="margin-top:.8rem">
+                <span class="city-tag" onclick="loadWeather('Riyadh')">الرياض</span>
+                <span class="city-tag" onclick="loadWeather('Jeddah')">جدة</span>
+                <span class="city-tag" onclick="loadWeather('Dubai')">دبي</span>
+                <span class="city-tag" onclick="loadWeather('Dammam')">الدمام</span>
+                <span class="city-tag" onclick="loadWeather('Mecca')">مكة</span>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error" style="display:none"></div>
+        <div id="loading" class="loading" style="display:none">⏳ جاري تحميل بيانات الطقس...</div>
+
+        <div id="currentWeather" class="current-weather" style="display:none">
+            <div class="city-name" id="cityName">-</div>
+            <div class="temperature-large" id="temperature">-°C</div>
+            <div class="weather-desc" id="weatherDesc">-</div>
+            <div class="details-grid" style="margin-top:1rem">
+                <div class="detail"><div class="muted">الرطوبة</div><div id="humidity">- %</div></div>
+                <div class="detail"><div class="muted">الرياح</div><div id="windSpeed">- كم/س</div></div>
+                <div class="detail"><div class="muted">الضغط</div><div id="pressure">- هكتوباسكال</div></div>
+                <div class="detail"><div class="muted">الرؤية</div><div id="visibility">- كم</div></div>
+            </div>
+        </div>
+
+        <div id="forecastSection" class="forecast-section" style="display:none">
+            <h3 style="color:var(--primary);font-weight:900">توقعات الأيام القادمة</h3>
+            <div id="forecastGrid" class="forecast-grid" style="margin-top:1rem"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'YOUR_API_KEY_HERE'; // ضع مفتاح OpenWeatherMap هنا
+        const BASE = 'https://api.openweathermap.org/data/2.5';
+        const icons = {'01d':'☀️','01n':'🌙','02d':'⛅','02n':'☁️','03d':'☁️','03n':'☁️','04d':'☁️','09d':'🌧️','10d':'🌦️','11d':'⛈️','13d':'❄️','50d':'🌫️'};
+
+        window.addEventListener('load', ()=> loadWeather('Riyadh'));
+        function searchCity(){ const c = document.getElementById('cityInput').value.trim(); if(c) loadWeather(c); else showError('الرجاء إدخال اسم المدينة'); }
+        async function loadWeather(city){
+            hideError(); showLoading();
+            try{
+                const cur = await fetch(`${BASE}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=ar`);
+                if(!cur.ok) throw new Error('المدينة غير موجودة');
+                const cdata = await cur.json();
+                displayCurrent(cdata);
+                const f = await fetch(`${BASE}/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=ar`);
+                const fdata = await f.json();
+                displayForecast(fdata);
+            }catch(e){ showError('عذراً، لم نتمكن من جلب بيانات الطقس. تأكد من اسم المدينة ومفتاح الـ API.'); console.error(e); }
+            finally{ hideLoading(); }
+        }
+        function displayCurrent(d){
+            document.getElementById('cityName').textContent = d.name;
+            document.getElementById('temperature').textContent = Math.round(d.main.temp) + '°C';
+            document.getElementById('weatherDesc').textContent = d.weather[0].description + ' ' + (icons[d.weather[0].icon]||'');
+            document.getElementById('humidity').textContent = d.main.humidity + '%';
+            document.getElementById('windSpeed').textContent = Math.round(d.wind.speed*3.6) + ' كم/س';
+            document.getElementById('pressure').textContent = d.main.pressure + ' هكتوباسكال';
+            document.getElementById('visibility').textContent = (d.visibility/1000).toFixed(1) + ' كم';
+            document.getElementById('currentWeather').style.display='block';
+        }
+        function displayForecast(d){
+            const grid = document.getElementById('forecastGrid'); grid.innerHTML='';
+            const list = d.list.filter(item => item.dt_txt.includes('12:00:00')).slice(0,5);
+            list.forEach(item=>{
+                const date = new Date(item.dt*1000);
+                const day = date.toLocaleDateString('ar-SA',{weekday:'long'});
+                const card = document.createElement('div'); card.className='forecast-card';
+                card.innerHTML = `<div style="font-weight:800;color:var(--primary)">${day}</div>
+                                  <div style="font-size:2rem">${icons[item.weather[0].icon]||''}</div>
+                                  <div style="font-weight:900">${Math.round(item.main.temp)}°C</div>
+                                  <div class="muted">${item.weather[0].description}</div>`;
+                grid.appendChild(card);
+            });
+            document.getElementById('forecastSection').style.display='block';
+        }
+        function showLoading(){document.getElementById('loading').style.display='block'; document.getElementById('currentWeather').style.display='none'; document.getElementById('forecastSection').style.display='none';}
+        function hideLoading(){document.getElementById('loading').style.display='none';}
+        function showError(msg){ const e=document.getElementById('errorMessage'); e.textContent=msg; e.style.display='block';}
+        function hideError(){document.getElementById('errorMessage').style.display='none';}
+    </script>
+</body>
+</html>

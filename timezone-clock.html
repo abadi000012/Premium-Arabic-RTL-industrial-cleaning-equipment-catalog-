@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>الساعة العالمية — نظافة برو</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Cairo',sans-serif;margin:0;background:linear-gradient(135deg,#0f172a,#1e3a8a);min-height:100vh;color:#fff;direction:rtl;display:flex;align-items:center;justify-content:center;padding:2rem}
+    .card{background:#fff;color:#0b1220;border-radius:12px;padding:1.25rem;max-width:1100px;width:100%;box-shadow:0 10px 40px rgba(2,6,23,0.6)}
+    h1{margin:0 0 .5rem;font-weight:900;color:#0f2e56}
+    .controls{display:flex;gap:.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
+    .tz-select{padding:.6rem;border-radius:8px;border:1px solid #e6edf3}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem}
+    .tz-card{background:#f8fafc;padding:.9rem;border-radius:8px;text-align:center;border:1px solid #e6edf3}
+    .time{font-weight:900;font-size:1.45rem}
+    .city{font-weight:700;color:#0f2e56}
+    .small{color:#475569}
+    @media(max-width:700px){.grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <h1>🕐 الساعة العالمية</h1>
+    <p class="small">اعرض الوقت الحالي في مناطق زمنية متعددة لتنسيق الجداول أو عمليات التشغيل الدولية.</p>
+    <div class="controls" style="margin-top:.75rem">
+      <select id="tzSelect" class="tz-select"></select>
+      <button id="addBtn" class="tz-select">أضف المنطقة</button>
+      <button id="clearBtn" class="tz-select">مسح الكل</button>
+    </div>
+
+    <div id="clockGrid" class="grid" style="margin-top:1rem"></div>
+  </div>
+
+<script>
+  // قائمة مناطق زمنية مقترحة
+  const suggested = [
+    {zone:'Asia/Riyadh', label:'الرياض'},
+    {zone:'Asia/Jerusalem', label:'القدس'},
+    {zone:'Asia/Dubai', label:'دبي'},
+    {zone:'Europe/London', label:'لندن'},
+    {zone:'Europe/Paris', label:'باريس'},
+    {zone:'America/New_York', label:'نيويورك'},
+    {zone:'Asia/Tokyo', label:'طوكيو'},
+    {zone:'Australia/Sydney', label:'سيدني'}
+  ];
+
+  const tzSelect = document.getElementById('tzSelect');
+  const clockGrid = document.getElementById('clockGrid');
+
+  // ملأ القائمة
+  suggested.forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s.zone;
+    opt.textContent = s.label + ' — ' + s.zone;
+    tzSelect.appendChild(opt);
+  });
+
+  // حالة المناطق المضافة
+  const zones = [];
+
+  document.getElementById('addBtn').addEventListener('click', ()=>{
+    const z = tzSelect.value;
+    if(!zones.find(x=>x.zone===z)){
+      const label = tzSelect.options[tzSelect.selectedIndex].text.split(' — ')[0];
+      addZone({zone:z,label});
+    }
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    zones.length = 0;
+    render();
+  });
+
+  function addZone(obj){
+    zones.push(obj);
+    render();
+  }
+
+  function render(){
+    clockGrid.innerHTML = '';
+    zones.forEach(z=>{
+      const card = document.createElement('div');
+      card.className = 'tz-card';
+      card.innerHTML = `<div class="city">${z.label}</div><div class="time" data-zone="${z.zone}">--:--:--</div><div class="small">${z.zone}</div>`;
+      clockGrid.appendChild(card);
+    });
+  }
+
+  // تحديث الوقت لكل منطقة
+  function updateClocks(){
+    document.querySelectorAll('.time').forEach(el=>{
+      const zone = el.getAttribute('data-zone');
+      try{
+        const now = new Date();
+        // تنسيق الوقت حسب المنطقة
+        const timeStr = now.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:zone});
+        const dateStr = now.toLocaleDateString('ar-SA',{weekday:'short',day:'numeric',month:'short',timeZone:zone});
+        el.textContent = `${timeStr} · ${dateStr}`;
+      }catch(e){
+        el.textContent = '—';
+      }
+    });
+  }
+
+  // تحديث كل ثانية
+  setInterval(updateClocks,1000);
+
+  // افتراضي: أضف الرياض ودبي
+  addZone(suggested[0]);
+  addZone(suggested[2]);
+</script>
+</body>
+</html>
